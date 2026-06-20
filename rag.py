@@ -2,12 +2,12 @@ import streamlit as st
 from groq import Groq
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 def create_vector_store(pdf_file):
     """
-    Chunks the input question bank PDF and compiles it into an in-memory Chroma DB.
+    Chunks the input question bank PDF and compiles it into an in-memory FAISS DB.
     """
     loader = PyPDFLoader(pdf_file)
     docs = loader.load()
@@ -22,7 +22,8 @@ def create_vector_store(pdf_file):
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    vectordb = Chroma.from_documents(
+    # Replaced Chroma with FAISS for Python 3.14 Cloud Stability
+    vectordb = FAISS.from_documents(
         documents=chunks,
         embedding=embeddings
     )
@@ -35,7 +36,6 @@ def generate_question(vectordb, profile_summary, context_history=""):
     """
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
     
-    # Query vector store using candidate profile summary as keywords
     search_query = f"Interview questions about {str(profile_summary)}"
     docs = vectordb.similarity_search(search_query, k=3)
     context = "\n".join([doc.page_content for doc in docs])
